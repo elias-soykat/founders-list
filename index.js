@@ -1,101 +1,74 @@
 import dotenv from "dotenv";
 import fs from "fs";
-import OpenAI from "openai";
 import path from "path";
+import { createChatCompletion } from "./utils/ai.js";
 dotenv.config();
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 // Generate Story-Based Topic
-const generateStoryTopic = async (userTopic) => {
+const generateStoryTopic = async (topicName) => {
   const prompt = `
-  Convert the custom topic '${userTopic}' into an **engaging and thought-provoking narrative**.
-  - Make it **relatable** to professionals and decision-makers.
-  - Incorporate **emotional engagement** by creating urgency or intrigue.
-  - Structure the story to **spark discussion** and **drive curiosity**.
-  - Ensure it has a **human-centric perspective** that appeals to a wide audience.
+  "Take the topic name: '${topicName}' and generate a compelling, engaging, and thought-provoking **topic story**.  
+
+  📌 **Guidelines:**  
+  - The story should be **concise yet powerful**.  
+  - Present the **real-world impact** of the topic with **clear, digestible insights**.  
+  - Use a **structured flow**, starting with **a bold opening statement**, followed by key effects, and ending with a sense of urgency.  
+  - Make the story **emotionally resonant**—evoke curiosity, concern, or action.  
+  - Avoid technical jargon—keep it **relatable and engaging**.  
+  - Ensure that **every generated story is unique and fresh**."  
   `;
 
-  try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert in crafting viral, high-impact LinkedIn stories that generate engagement.",
-        },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    return response.choices[0].message.content.trim();
-  } catch (error) {
-    console.error("Error generating story topic:", error);
-    return "Error generating story topic.";
-  }
+  return createChatCompletion(
+    prompt,
+    "You are an expert in crafting viral, high-impact LinkedIn stories that help to create a linkedin post."
+  );
 };
 
 // Generate LinkedIn Post
-const generateLinkedInPost = async (storyTopic) => {
+const generateLinkedInPost = async (topicStory) => {
   const prompt = `
-  Generate a **viral LinkedIn post** based on the topic: "${storyTopic}".
+ "Write a high-impact, viral LinkedIn post based on the topic story: '${topicStory}'  
 
-  ### **Step 1: Create an Engaging Story-Based Hook**
-  - Avoid **restating the topic directly**.
-  - Use a **powerful question, bold statement, or surprising stat** to grab attention.
-  - Ensure the hook is **emotionally compelling** (shock, excitement, curiosity).
+  📌 **Formatting & Readability:**  
+  - Short, crisp sentences (**under 60 characters**).  
+  - Use **bullet points** for clarity and easy skimming.  
+  - Maintain **world-class formatting** with **spaced-out paragraphs**.  
 
-  ### **Step 2: Build Engagement Through Relatable Insights**
-  - Write in **short, impactful sentences** (under 60 characters each).
-  - Use **list formats, personal anecdotes, and relevant statistics**.
-  - Add **spacing between each paragraph** for readability.
-  - Incorporate **3-5 high-impact hashtags** to maximize reach.
-  - End with a **clear and compelling call-to-action (CTA)** (e.g., "What do you think?" or "Share your thoughts below!").
+  🎯 **Engagement & Virality:**  
+  - Start with a **bold, attention-grabbing hook**.  
+  - Use **strong visuals in words** (e.g., 'Empty streets. Silent cafes.').  
+  - Highlight **key pain points and insights** in a punchy style.  
+  - Keep the **language conversational, yet professional**.  
 
-  ### **Step 3: Optimize the Post for Maximum Engagement**
-  - Keep the language **natural, conversational, and free of jargon**.
-  - Maintain a professional yet **approachable and human tone**.
-  - Ensure that every generated post is **unique in structure and storytelling**.
-  - Follow **LinkedIn's best practices** for viral content.
+  🚀 **Best Practices:**  
+  - Avoid AI jargon or robotic phrases.  
+  - Ensure every post is **unique, engaging, and discussion-worthy**.  
+  - End with a **strong call to action (CTA)**, encouraging interaction.  
+  - Add **3-5 relevant hashtags** to maximize visibility.  
+
+💡 **Generate a fresh, distinct post every time this prompt is run.**"  
   `;
 
-  try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a LinkedIn content specialist, generating high-impact, viral posts that drive engagement.",
-        },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    return response.choices[0].message.content.trim();
-  } catch (error) {
-    console.error("Error generating LinkedIn post:", error);
-  }
+  return createChatCompletion(
+    prompt,
+    "You are a LinkedIn content specialist, generating high-impact, viral posts that drive engagement."
+  );
 };
 
 // Main Function
 const main = async () => {
-  // Create output directory if it doesn't exist
   const outputDir = path.join(process.cwd(), "output");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const userTopic = "Remote working is turning cities into ghost cities.";
+  const userTopic = "The Urban Shift: How Remote Work is Reshaping Cities.";
   const storyTopic = await generateStoryTopic(userTopic);
   const linkedinPost = await generateLinkedInPost(storyTopic);
 
   const timestamp = new Date().toISOString().replace(/:/g, "-");
   const filename = path.join(outputDir, `${timestamp}.md`);
-  const markdownContent = `# LinkedIn Post Analysis
+  const markdownContent = `
 
 ## Generated Story Topic
 ${storyTopic}
@@ -103,7 +76,6 @@ ${storyTopic}
 ## Generated Post
 ${linkedinPost}
 
-*Generated on: ${new Date().toISOString()}*
 `;
 
   fs.writeFileSync(filename, markdownContent, "utf-8");
